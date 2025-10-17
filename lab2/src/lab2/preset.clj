@@ -29,7 +29,9 @@
 (defn- remove-child [node char]
   (assoc node :children (dissoc (:children node) char)))
 
-(defn- add-chars [node chars]
+; ===================================== Основные функции API set =====================================
+; ========== add ==========
+(defn- add-by-char [node chars]
   (if (empty? chars)
     (assoc node :end-of-word? true)
     (let [current-char (first chars)
@@ -39,13 +41,13 @@
       
       (update-children node
                        current-char
-                       (add-chars child remaining-chars)))))
+                       (add-by-char child remaining-chars)))))
 
 (defn add-element [pre-set element]
-  (->PreSet (add-chars (:root pre-set) (string-to-chars element))))
+  (->PreSet (add-by-char (:root pre-set) (string-to-chars element))))
 
-
-(defn- disj-impl [node chars]
+; ========== delete ==========
+(defn- delete-by-char [node chars]
   (if (empty? chars)
     ;; Дошли до конца - снимаем флаг конечного узла
     (if (empty? (:children node))
@@ -58,31 +60,31 @@
 
       (if (nil? child)
         node ; Элемент не найден - возвращаем как есть
-        (let [updated-child (disj-impl child remaining-chars)]
+        (let [updated-child (delete-by-char child remaining-chars)]
           (if (nil? updated-child)
             (remove-child node current-char)
             (update-children node current-char updated-child)))))))
 
 (defn delete-element [pre-set element]
-  (let [new-root (disj-impl (:root pre-set) (string-to-chars element))]
+  (let [new-root (delete-by-char (:root pre-set) (string-to-chars element))]
     (if (nil? new-root)
       empty-pre-set
       (->PreSet new-root))))
 
-
-(defn- contains-impl? [node chars]
+; ========== contains ==========
+(defn- contains-by-char? [node chars]
   (cond
     (nil? node) false
     (empty? chars) (:end-of-word? node)
     :else (let [current-char (first chars)
                 remaining-chars (rest chars)
                 child (get-child node current-char)]
-            (contains-impl? child remaining-chars))))
+            (contains-by-char? child remaining-chars))))
 
 (defn contains-pre-set? [pre-set element]
-  (contains-impl? (:root pre-set) (string-to-chars element)))
+  (contains-by-char? (:root pre-set) (string-to-chars element)))
 
-
+; ========== size ==========
 (defn- count-impl [node]
   (let [current-count (if (:end-of-word? node) 1 0)
         children-count (reduce + (map (fn [[_ child]] (count-impl child))
