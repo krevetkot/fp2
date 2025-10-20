@@ -1,7 +1,10 @@
 (ns lab2.core-test
   (:require
    [clojure.test :refer [deftest]]
-   [lab2.preset-impl :refer [size-pre-set conj-pre-set conj-set contains-pre-set? disj-pre-set empty-pre-set filter-pre-set map-pre-set pre-set pre-set-seq pre-set? reduce-pre-set-left reduce-pre-set-right]]
+   [lab2.preset-impl :refer [size-pre-set conj-pre-set conj-set contains-pre-set?
+                             disj-pre-set empty-pre-set filter-pre-set map-pre-set
+                             pre-set pre-set-seq pre-set? reduce-pre-set-left
+                             reduce-pre-set-right]]
    [lab2.test-macroses :refer [check should-be should-contain
                                should-not-contain should=]]))
 

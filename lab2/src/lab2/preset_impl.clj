@@ -1,4 +1,5 @@
-(ns lab2.preset-impl)
+(ns lab2.preset-impl
+  (:require [clojure.string :as string]))
 
 ;; ===================================== ТИПЫ ДАННЫХ И ПРОТОКОЛ =====================================
 (defrecord TrieNode [children end-of-word?])
@@ -18,27 +19,25 @@
   ([] (->TrieNode {} false))
   ([end?] (->TrieNode {} end?)))
 
-(defn- new-leaf-node [] (new-node true))
-
 (defn- string-to-chars [s]
   (seq (str s)))
 
-(defn- get-child [node char]
-  (get (:children node) char))
+(defn- get-child [node ch]
+  (get (:children node) ch))
 
-(defn- update-children [node char new-child]
-  (assoc node :children (assoc (:children node) char new-child)))
+(defn- update-children [node ch new-child]
+  (assoc-in node [:children ch] new-child))
 
-(defn- remove-child [node char]
-  (assoc node :children (dissoc (:children node) char)))
+(defn- remove-child [node ch]
+  (update-in node [:children] dissoc ch))
 
 ; ===================================== Основные функции API set =====================================
 ; ========== add ==========
-(defn- conj-impl [node chars]
-  (if (empty? chars)
+(defn- conj-impl [node chs]
+  (if (empty? chs)
     (assoc node :end-of-word? true)
-    (let [current-char (first chars)
-          remaining-chars (rest chars)
+    (let [current-char (first chs)
+          remaining-chars (rest chs)
           possible-child (get-child node current-char)
           child (if (empty? possible-child) (new-node) possible-child)]
 
@@ -50,15 +49,13 @@
   (->PreSet (conj-impl (:root pre-set) (string-to-chars element))))
 
 ; ========== delete ==========
-(defn- disj-impl [node chars]
-  (if (empty? chars)
+(defn- disj-impl [node chs]
+  (if (empty? chs)
     ;; Дошли до конца - снимаем флаг конечного узла
-    (if (empty? (:children node))
-      nil ; Удаляем узел, если нет детей
-      (assoc node :end-of-word? false))
+    (when (seq (:children node)) (assoc node :end-of-word? false))
 
-    (let [current-char (first chars)
-          remaining-chars (rest chars)
+    (let [current-char (first chs)
+          remaining-chars (rest chs)
           child (get-child node current-char)]
 
       (if (nil? child)
@@ -75,12 +72,12 @@
       (->PreSet new-root))))
 
 ; ========== contains ==========
-(defn- contains-by-char? [node chars]
+(defn- contains-by-char? [node chs]
   (cond
     (nil? node) false
-    (empty? chars) (:end-of-word? node)
-    :else (let [current-char (first chars)
-                remaining-chars (rest chars)
+    (empty? chs) (:end-of-word? node)
+    :else (let [current-char (first chs)
+                remaining-chars (rest chs)
                 child (get-child node current-char)]
             (contains-by-char? child remaining-chars))))
 
@@ -100,9 +97,9 @@
 ; ========== обход дерева для map & reduce ==========
 (defn- traverse [node current-path]
   (lazy-seq
-   (let [current-result (when (:end-of-word? node) (apply str current-path))
-         child-results (mapcat (fn [[char child]]
-                                 (traverse child (conj current-path char)))
+   (let [current-result (when (:end-of-word? node) (string/join current-path))
+         child-results (mapcat (fn [[ch child]]
+                                 (traverse child (conj current-path ch)))
                                (:children node))]
      (if current-result
        (cons current-result child-results)
@@ -124,13 +121,13 @@
        (reduce conj-pre-set empty-pre-set)))
 
 ; ========== свертки ==========
-; левая
+; left
 (defn reduce-pre-set-left
   ([f pre-set] (reduce-pre-set-left f (f) pre-set))
   ([f init pre-set]
    (reduce f init (pre-set-seq pre-set))))
 
-; правая 
+; right
 (defn reduce-pre-set-right
   ([f pre-set] (reduce-pre-set-right f (f) pre-set))
   ([f init pre-set]
