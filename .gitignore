@@ -1,2 +1,4 @@
 /.clj-kondo
 /.lsp
+lab2/kaocha.edn
+lab2/tests.edn

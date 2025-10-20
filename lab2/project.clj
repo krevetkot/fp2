@@ -6,13 +6,14 @@
   :target-path "target/%s"
   :plugins [[lein-cljfmt "0.8.2"]
             [lein-kibit "0.1.8"]
-            [lein-bikeshed "0.5.2"]]
+            [lein-bikeshed "0.5.2"]
+            [lambdaisland/kaocha "1.91.1392"]]
   :profiles {:uberjar {:aot :all
                        :jvm-opts ["-Dclojure.compiler.direct-linking=true"]}
-             :dev {:dependencies [[midje "1.10.9"]
-                                  [org.clojure/test.check "1.1.1"]
+             :dev {:dependencies [[org.clojure/test.check "1.1.1"]
                                   [pjstadig/humane-test-output "0.11.0"]
-                                  [clj-kondo "2023.10.20"]]}}
+                                  [clj-kondo "2023.10.20"]
+                                  [lambdaisland/kaocha "1.91.1392"]]}}
   :test-selectors {:default (complement :integration)
                    :integration :integration
                    :all (constantly true)}
@@ -20,4 +21,8 @@
                     ["cljfmt" "check"]
                     ["kibit"]
                     ["bikeshed" "--max-line-length" "120"]
-                    ["run" "-m" "clj-kondo.main" "--lint" "src" "test"]]})
+                    ["run" "-m" "clj-kondo.main" "--lint" "src" "test"]]
+            "kaocha" ["run" "-m" "kaocha.runner"]
+            "test" ["kaocha"]
+            "test-unit" ["kaocha" "--focus" ":unit"]
+            "test-property" ["kaocha" "--focus" ":property-based"]})

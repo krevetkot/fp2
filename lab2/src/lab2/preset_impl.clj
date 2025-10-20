@@ -13,7 +13,6 @@
 
 (def empty-pre-set (->PreSet (->TrieNode {} false)))
 
-
 ; ===================================== Вспомогательные приватные функции =====================================
 (defn- new-node
   ([] (->TrieNode {} false))
@@ -42,7 +41,7 @@
           remaining-chars (rest chars)
           possible-child (get-child node current-char)
           child (if (empty? possible-child) (new-node) possible-child)]
-      
+
       (update-children node
                        current-char
                        (conj-impl child remaining-chars)))))
@@ -126,13 +125,13 @@
 
 ; ========== свертки ==========
 ; левая
-(defn reduce-pre-set-left 
+(defn reduce-pre-set-left
   ([f pre-set] (reduce-pre-set-left f (f) pre-set))
   ([f init pre-set]
    (reduce f init (pre-set-seq pre-set))))
 
 ; правая 
-(defn reduce-pre-set-right 
+(defn reduce-pre-set-right
   ([f pre-set] (reduce-pre-set-right f (f) pre-set))
   ([f init pre-set]
    (reduce f init (rseq (vec (pre-set-seq pre-set))))))
@@ -152,8 +151,6 @@
 ; Нейтральный элемент
 (def identity-pre-set empty-pre-set)
 
-
-
 ;; Реализация протокола для PreSet
 (extend-type PreSet
   PSet
@@ -161,9 +158,6 @@
   (disj-set [this element] (disj-pre-set this element))
   (contains-set? [this element] (contains-pre-set? this element))
   (set-seq [this] (pre-set-seq this)))
-
-
-
 
 (defn ->pre-set [coll] (reduce conj-pre-set empty-pre-set coll))
 (defn pre-set [& elements] (->pre-set elements))
