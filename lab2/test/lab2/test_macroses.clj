@@ -2,7 +2,6 @@
   (:require [clojure.test :refer [is testing]]
             [lab2.preset-impl :as ps]))
 
-;; Макросы для читаемых тестов
 (defmacro check [description & assertions]
   `(testing ~description
      ~@assertions))

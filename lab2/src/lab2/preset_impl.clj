@@ -6,7 +6,6 @@
 (defrecord PreSet [root])
 
 (defprotocol PSet
-  "Протокол для функциональных множеств."
   (conj-set [this element])
   (disj-set [this element])
   (contains-set? [this element])
@@ -51,7 +50,6 @@
 ; ========== delete ==========
 (defn- disj-impl [node chs]
   (if (empty? chs)
-    ;; Дошли до конца - снимаем флаг конечного узла
     (when (seq (:children node)) (assoc node :end-of-word? false))
 
     (let [current-char (first chs)
@@ -59,7 +57,7 @@
           child (get-child node current-char)]
 
       (if (nil? child)
-        node ; Элемент не найден - возвращаем как есть
+        node
         (let [updated-child (disj-impl child remaining-chars)]
           (if (nil? updated-child)
             (remove-child node current-char)
@@ -136,7 +134,6 @@
 ; ========== объединение множеств ==========
 (defn- union-impl [node1 node2]
   (let [merged-end? (or (:end-of-word? node1) (:end-of-word? node2))
-        ;; Объединяем детей через merge-with
         merged-children (merge-with union-impl
                                     (:children node1)
                                     (:children node2))]
@@ -145,10 +142,9 @@
 (defn concat-pre-set [pre-set1 pre-set2]
   (->PreSet (union-impl (:root pre-set1) (:root pre-set2))))
 
-; Нейтральный элемент
-(def identity-pre-set empty-pre-set)
+; Нейтральный элемент - пустое множество
 
-;; Реализация протокола для PreSet
+; Реализация протокола для PreSet
 (extend-type PreSet
   PSet
   (conj-set [this element] (conj-pre-set this element))
