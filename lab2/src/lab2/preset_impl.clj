@@ -2,17 +2,59 @@
   (:require [clojure.string :as string]))
 
 ;; ===================================== ТИПЫ ДАННЫХ И ПРОТОКОЛ =====================================
-(defrecord TrieNode [children end-of-word?])
-(defrecord PreSet [root])
-
 (defprotocol PSet
   (conj-set [this element])
   (disj-set [this element])
   (contains-set? [this element])
   (set-seq [this]))
 
-(def empty-pre-set (->PreSet (->TrieNode {} false)))
+(defn- count-impl [node]
+  (let [current-count (if (:end-of-word? node) 1 0)
+        children-count (reduce + (map (fn [[_ child]] (count-impl child))
+                                      (:children node)))]
+    (+ current-count children-count)))
 
+(defn size-pre-set [pre-set]
+  (count-impl (.root pre-set)))
+
+(defrecord TrieNode [children end-of-word?])
+
+(deftype PreSet [root]
+  Object
+  (equals [this other]
+    (cond
+      (identical? this other) true
+      (instance? PreSet other)
+      (= (set (set-seq this)) (set (set-seq other)))
+      (instance? java.util.Set other)
+      (= (set (set-seq this)) (set other))
+      :else false))
+
+  clojure.lang.IPersistentSet
+  (cons [this element]
+    (conj-set this element))
+  (empty [_]
+    (PreSet. (->TrieNode {} false)))
+  (equiv [this other]
+    (.equals this other))
+  (disjoin [this element]
+    (disj-set this element))
+
+  clojure.lang.ILookup
+  (valAt [this key]
+    (when (contains-set? this key) key))
+  (valAt [this key not-found]
+    (if (contains-set? this key) key not-found))
+
+  clojure.lang.Seqable
+  (seq [this]
+    (seq (set-seq this)))
+
+  clojure.lang.Counted
+  (count [this]
+    (size-pre-set this)))
+
+(def empty-pre-set (PreSet. (->TrieNode {} false)))
 ; ===================================== Вспомогательные приватные функции =====================================
 (defn- new-node
   ([] (->TrieNode {} false))
@@ -45,7 +87,7 @@
                        (conj-impl child remaining-chars)))))
 
 (defn conj-pre-set [pre-set element]
-  (->PreSet (conj-impl (:root pre-set) (string-to-chars element))))
+  (PreSet. (conj-impl (.root pre-set) (string-to-chars element))))
 
 ; ========== delete ==========
 (defn- disj-impl [node chs]
@@ -64,10 +106,10 @@
             (update-children node current-char updated-child)))))))
 
 (defn disj-pre-set [pre-set element]
-  (let [new-root (disj-impl (:root pre-set) (string-to-chars element))]
+  (let [new-root (disj-impl (.root pre-set) (string-to-chars element))]
     (if (nil? new-root)
       empty-pre-set
-      (->PreSet new-root))))
+      (PreSet. new-root))))
 
 ; ========== contains ==========
 (defn- contains-by-char? [node chs]
@@ -80,17 +122,9 @@
             (contains-by-char? child remaining-chars))))
 
 (defn contains-pre-set? [pre-set element]
-  (contains-by-char? (:root pre-set) (string-to-chars element)))
+  (contains-by-char? (.root pre-set) (string-to-chars element)))
 
 ; ========== size ==========
-(defn- count-impl [node]
-  (let [current-count (if (:end-of-word? node) 1 0)
-        children-count (reduce + (map (fn [[_ child]] (count-impl child))
-                                      (:children node)))]
-    (+ current-count children-count)))
-
-(defn size-pre-set [pre-set]
-  (count-impl (:root pre-set)))
 
 ; ========== обход дерева для map & reduce ==========
 (defn- traverse [node current-path]
@@ -104,7 +138,7 @@
        child-results))))
 
 (defn pre-set-seq [pre-set]
-  (traverse (:root pre-set) []))
+  (traverse (.root pre-set) []))
 
 ; ========== фильтрация ==========
 (defn filter-pre-set [pred pre-set]
@@ -140,7 +174,7 @@
     (->TrieNode merged-children merged-end?)))
 
 (defn concat-pre-set [pre-set1 pre-set2]
-  (->PreSet (union-impl (:root pre-set1) (:root pre-set2))))
+  (PreSet. (union-impl (.root pre-set1) (.root pre-set2))))
 
 ; Нейтральный элемент - пустое множество
 
