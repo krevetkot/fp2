@@ -1,10 +1,11 @@
 (ns lab2.core-test
   (:require
-   [clojure.test :refer [deftest]]
-   [lab2.preset-impl :refer [size-pre-set conj-pre-set conj-set contains-pre-set?
-                             disj-pre-set empty-pre-set filter-pre-set map-pre-set
-                             pre-set pre-set-seq pre-set? reduce-pre-set-left
-                             reduce-pre-set-right]]
+   [clojure.test :refer [deftest is]]
+   [lab2.preset-impl :refer [conj-pre-set conj-set contains-pre-set?
+                             disj-pre-set empty-pre-set filter-pre-set
+                             map-pre-set pre-set pre-set-seq pre-set?
+                             reduce-pre-set-left reduce-pre-set-right
+                             size-pre-set]]
    [lab2.test-macroses :refer [check should-be should-contain
                                should-not-contain should=]]))
 
@@ -92,3 +93,55 @@
            (should-contain s "dog")
            (should-not-contain s "ca")
            (should-not-contain s "cars"))))
+
+; тестирование поддержки стандартныъ интерфейсов кложура
+
+(deftest clojure-standard-interfaces-test
+  (check "Counted interface"
+         (let [s (pre-set "a" "b" "c")]
+           (should= 3 (count s)) ; стандартная функция count работает
+           (should= (size-pre-set s) (count s)))) ; и результат совпадает с моей функцией
+
+  (check "Seqable interface"
+         (let [s (pre-set "x" "y")]
+           (should= (set ["x" "y"]) (set (seq s))))) ; pre-set можно превратить в последовательность
+
+  (check "ILookup interface valAt"
+         (let [s (pre-set "aa" "bb")]
+           (should= "aa" (get s "aa")) ; get работает
+           (should-be (nil? (get s "cc")))
+           (should= :not-found (get s "cc" :not-found))))
+
+  (check "IPersistentSet: cons & disjoin"
+         (let [s (pre-set "a")
+               s2 (conj s "b")
+               s3 (disj s2 "a")]
+           (should-contain s2 "a")
+           (should-contain s2 "b")
+           (should-not-contain s3 "a")
+           (should-contain s3 "b")))
+
+  (check "empty sequence of the same type"
+         (let [s (pre-set "a" "b")
+               e (empty s)]
+           (should-be (pre-set? e))
+           (should= 0 (count e))
+           (should-be (empty? (seq e)))))
+
+  (check "equals / equiv for PreSet <-> PreSet"
+         (let [s1 (pre-set "a" "b")
+               s2 (pre-set "b" "a")]
+           (should-be (= s1 s2))
+           (should-be (.equals s1 s2))
+           (should-be (.equiv s1 s2))))
+
+  (check "equals for PreSet <-> java.util.Set"
+         (let [s  (pre-set "a" "b")
+               js #{"a" "b"}]
+           (should-be (= s js))
+           (should= js (set (seq s)))))
+
+  (check "PreSet work with standart functions"
+         (let [s (pre-set "a" "b" "c")]
+           (should= "abc" (apply str (sort (seq s))))
+           (should-contain s "a"))))
